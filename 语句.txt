@@ -1,0 +1,111 @@
+conn system/a123
+--创建表空间
+create tablespace comment_tablespace
+datafile 'c:\orderdata\A1.dbf'
+size 50m;--评论存储空间
+create tablespace order_tablespace
+datafile 'c:\orderdata\B1.dbf'
+size 50m;--订单--商品类型--商品信息--交易记录
+create tablespace user_tablespace
+datafile 'c:\orderdata\C1.dbf'
+size 50m;--角色--权限--地址
+--创建用户
+create user mrchen
+IDENTIFIED by a123
+default tablespace order_tablespace;
+--用户授权
+grant connect ,resource to mrchen;
+--连接用户
+conn mrchen/a123
+
+
+
+CREATE TABLE role_limit(--权限
+ limit_id number(3),--主键
+ limit_description varchar2(20) not null,
+ CONSTRAINT pk_role_limit_id PRIMARY KEY(limit_id)
+)tablespace user_tablespace;
+
+CREATE TABLE role_info(--角色
+ role_id varchar(10),--主键  唯一标识符
+ role_name varchar2(20) not null,
+ role_pwd varchar2(20) not null,
+ role_email varchar2(20) not null,
+ role_phone varchar(10) not null,
+ limit_id number(3),--外键    连接权限表
+CONSTRAINT pk_role_info_id PRIMARY KEY(role_id),
+CONSTRAINT fk_role_info_limit_id FOREIGN KEY (limit_id) REFERENCES role_limit (limit_id)
+)tablespace user_tablespace;
+
+CREATE TABLE address_info(--地址
+ buyer_id varchar(10) not null,--外键       连接角色表
+ address varchar2(100) not null,
+constraint fk_address_buyer_id   foreign key(buyer_id) references role_info(role_id)
+)tablespace user_tablespace;
+
+create table orders_info (--订单
+   order_info_id varchar(10),--主键  唯一标识符
+   buyer_id varchar(10) not null,--外键    连接角色
+   saler_id varchar(10) not null,--外键   连接角色
+   order_time    timestamp default sysdate，
+   constraint fk_order_buyer_id   foreign key(buyer_id) references role_info(role_id),
+   constraint fk_order_saler_id   foreign key(saler_id) references role_info(role_id),
+   constraint pk_order_info_id primary key(order_info_id)
+);
+
+create table pro_category(--商品类型
+       cate_id number(3),--主键
+       cate_name varchar2(10) not null,
+       constraint pk_cate_id  primary key(cate_id)
+);
+
+create table product_info(--商品
+       product_id varchar(10),--主键    唯一标识符
+       cate_id number(3),--外键  连接商品类型表
+       pro_name varchar2(20),
+       pro_mount number(10),
+       saler_id  varchar(10),--外键  连接角色表
+       pro_state  number(2),
+       constraint pk_product_info_product_id  primary key(product_id),
+       constraint fk_product_info_saler_id   foreign key(saler_id) references role_info(role_id),
+       constraint fk_product_info_cate_id foreign key(cate_id) references pro_category(cate_id));
+
+create table order_record(--交易记录
+       order_record_id  varchar(10),--主键         唯一标识符
+       order_info_id varchar(10) not null,--外键    连接订单
+       product_id varchar(10) not null,--外键   连接商品信息表
+       pro_nubmber number(3) not null,
+       pro_price   number(10,2),
+       constraint pk_order_record_id primary key(order_record_id),
+       constraint fk_order_record_product_id foreign key(product_id) references product_info(product_id),
+       constraint fk_order_info_id foreign key(order_info_id) references orders_info(order_info_id));
+
+
+create table comment_response(--评论
+       comment_id varchar(10),--主键         唯一标识符
+       comment_title    varchar2(10), 
+       comment_content   varchar2(20) not null,
+       comment_time timestamp default sysdate,
+       author_id   varchar(10) not null,--外键  连接角色
+       product_id  varchar(10) not null,--外键  连接商品信息表
+       response_id   varchar(10) ,--外键  连接评论表
+        constraint pk_comment_id primary key(comment_id),
+        constraint fk_comment_product_id foreign key(product_id) references product_info(product_id),
+       constraint fk_author_id foreign key(author_id) references role_info(role_id),
+       constraint fk_response_id foreign key(response_id) references comment_response(comment_id))tablespace comment_tablespace;
+
+ALTER TABLE product_info ADD （product_price number(6,2) not null）;
+
+drop table comment_response;
+drop table order_record;
+drop table product_info;
+drop table pro_category;
+drop table orders_info;
+drop table address_info;
+drop table role_info;
+drop table role_limit;
+//添加了一列买家ID用于知道是哪个用户购买，外键是role_info
+ ALTER TABLE orders_info ADD （buyer_id  CHAR(10) not null ）;
+    ALTER TABLE orders_info ADD CONSTRAINT fk_buyer_id FOREIGN KEY(buyer_id) REFERENCES role_info(role_id);
+
+
