@@ -13,9 +13,9 @@ public class JDBCUtil {
 	//2 数据库连接地址   string
 	private static final String URL="jdbc:oracle:thin:@127.0.0.1:1521:XE";
 	//3 数据库实例用户名   string   
-	private static final String USER="txy";
+	private static final String USER="账号";
 	//4 数据库连接密码  string
-	private static final String PWD="a123";
+	private static final String PWD="密码";
 	/**
 	 * 获取数据库连接方法
 	 * return  
